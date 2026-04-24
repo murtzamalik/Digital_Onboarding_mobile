@@ -28,14 +28,17 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "CAMERA",
+        "USE_BIOMETRIC",
+        "CAMERA",
         "USE_BIOMETRIC"
-      ]
+      ],
+      "package": "com.anonymous.cebosmobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiBaseUrl": "http://localhost:8080/api/v1/mobile"
+      "apiBaseUrl": "http://46.224.146.158:7072/api/v1/mobile"
     }
   }
 }

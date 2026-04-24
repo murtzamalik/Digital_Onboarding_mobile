@@ -2,17 +2,19 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import * as ImagePicker from 'expo-image-picker'
 import { useState } from 'react'
+import { Text } from 'react-native'
 import { getJourneyStatus, submitFaceMatch } from '../api/mobileBackend'
-import { AppInput, ErrorText, LinkButton, PrimaryButton, Screen, SecondaryButton, Title } from '../components/ui'
+import { ErrorText, Hint, LinkButton, PrimaryButton, Screen, SecondaryButton, Title } from '../components/ui'
 import { getResumeRouteForStatus } from '../navigation/getResumeRouteForStatus'
 import type { RootStackParamList } from '../navigation/types'
 import { toUserMessage } from '../utils/error'
+import { readImageUriAsBase64 } from '../utils/imageBase64'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export default function FaceMatchScreen() {
   const navigation = useNavigation<Nav>()
-  const [selfiePath, setSelfiePath] = useState('mobile://selfie/live.jpg')
+  const [selfieUri, setSelfieUri] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,22 +26,27 @@ export default function FaceMatchScreen() {
     }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      quality: 0.7,
+      quality: 0.8,
     })
     if (!result.canceled && result.assets.length > 0) {
-      setSelfiePath(result.assets[0].uri)
+      setSelfieUri(result.assets[0].uri)
       setError(null)
     }
   }
 
-  async function onSubmit(result: 'MATCHED' | 'FAILED') {
+  async function onSubmit() {
+    if (!selfieUri) {
+      setError('Take a selfie first')
+      return
+    }
     setError(null)
     setBusy(true)
     try {
-      const status = await submitFaceMatch(selfiePath.trim(), result === 'MATCHED' ? 0.89 : 0.2, result)
+      const selfieBase64 = await readImageUriAsBase64(selfieUri)
+      const status = await submitFaceMatch(selfieBase64)
       navigation.reset({ index: 0, routes: [{ name: getResumeRouteForStatus(status.status) }] })
     } catch (e) {
-      setError(toUserMessage(e, 'Could not submit face match'))
+      setError(toUserMessage(e, 'Face verification failed'))
     } finally {
       setBusy(false)
     }
@@ -60,11 +67,17 @@ export default function FaceMatchScreen() {
 
   return (
     <Screen>
-      <Title>Face Match</Title>
-      <AppInput value={selfiePath} onChangeText={setSelfiePath} />
+      <Title>Face match</Title>
+      <Hint>
+        Your selfie is compared with the CNIC front photo on the server using the BBS face-match API.
+      </Hint>
+      {selfieUri ? <Text style={{ color: '#374151', marginBottom: 8 }}>Selfie ready to verify.</Text> : null}
       <SecondaryButton label="Capture selfie" onPress={captureSelfie} disabled={busy} />
-      <PrimaryButton label="Mark Face Matched" onPress={() => onSubmit('MATCHED')} disabled={busy || !selfiePath.trim()} />
-      <PrimaryButton label="Mark Face Failed" onPress={() => onSubmit('FAILED')} disabled={busy || !selfiePath.trim()} />
+      <PrimaryButton
+        label={busy ? 'Verifying…' : 'Submit for face verification'}
+        onPress={onSubmit}
+        disabled={busy || !selfieUri}
+      />
       <LinkButton label="Refresh journey status" onPress={refreshFromServer} disabled={busy} />
       {error ? <ErrorText>{error}</ErrorText> : null}
     </Screen>

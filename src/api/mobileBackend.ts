@@ -84,16 +84,16 @@ export async function getMobilePolicy(): Promise<MobilePolicy> {
   return apiFetch<MobilePolicy>('/policy', 'GET', { auth: false })
 }
 
-export async function submitCnicFront(imagePath: string): Promise<JourneyStatus> {
+export async function submitCnicFront(base64Image: string): Promise<JourneyStatus> {
   return apiFetch<JourneyStatus>('/kyc/cnic/front', 'POST', {
-    body: { imagePath },
+    body: { base64Image },
     auth: true,
   })
 }
 
-export async function submitCnicBack(imagePath: string): Promise<JourneyStatus> {
+export async function submitCnicBack(base64Image: string): Promise<JourneyStatus> {
   return apiFetch<JourneyStatus>('/kyc/cnic/back', 'POST', {
-    body: { imagePath },
+    body: { base64Image },
     auth: true,
   })
 }
@@ -110,13 +110,9 @@ export async function submitLiveness(
   })
 }
 
-export async function submitFaceMatch(
-  selfieImagePath: string,
-  score: number,
-  result: string,
-): Promise<JourneyStatus> {
+export async function submitFaceMatch(selfieBase64: string): Promise<JourneyStatus> {
   return apiFetch<JourneyStatus>('/kyc/face-match/submit', 'POST', {
-    body: { selfieImagePath, score, result },
+    body: { selfieBase64 },
     auth: true,
   })
 }
